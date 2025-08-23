@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  database:
+    container_name: my_library_helper
+    image: 'postgres:latest'
+    environment:
+      POSTGRES_DB: library_db
+      POSTGRES_USER: arty
+      POSTGRES_PASSWORD: arty
+    ports:
+      - '5444:5432'

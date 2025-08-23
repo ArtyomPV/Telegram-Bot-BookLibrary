@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: Telegram-Bot-BookLibrary
+
+  datasource:
+    url: jdbc:postgresql://localhost:5444/library_db
+    username: arty
+    password: arty
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    properties:
+      hibernate:
+        format-ddl: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+bot:
+  botUsername: ${BOT_USERNAME}
+  botToken: ${BOT_TOKEN}
+server:
+  port: 8081
