@@ -2,10 +2,15 @@ package ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 import ru.prusov.Telegram_Bot_BookLibrary.factory.AnswerMethodFactory;
@@ -14,10 +19,10 @@ import ru.prusov.Telegram_Bot_BookLibrary.model.Book;
 import ru.prusov.Telegram_Bot_BookLibrary.usecase.services.book.BookService;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import static ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks.CallbackData.SHOW_BOOKS_PAGINATION;
-import static ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks.CallbackData.START;
+import static ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks.CallbackData.*;
 
 @Component
 @RequiredArgsConstructor
@@ -25,7 +30,6 @@ public class ShowBooksPaginationCallbackData implements CallbackCommand {
 
     private final TelegramClient client;
     private final BookService bookService;
-//    @Value("${page:size}")
     private int PAGE_SIZE = 2;
 
     @Override
@@ -44,66 +48,68 @@ public class ShowBooksPaginationCallbackData implements CallbackCommand {
             throw new RuntimeException(e);
         }
 
-        int page = 1;
-        String[] parts = callbackQuery.getData().split(":");
-        page = Integer.parseInt(parts[1]);
+        int page = parseSecondInt(callbackQuery.getData(), 1);
+
         if (page < 1) page = 1;
 
-        sendBookPage(callbackQuery.getMessage().getChatId(), page);
-    }
-
-    private void sendBookPage(Long chatId, int page) {
-        List<Book> pageBooks = bookService.findPage(page, PAGE_SIZE);
-        List<String> textButton = new ArrayList<>();
-        List<String> dataButton = new ArrayList<>();
-        List<Integer> configuration = new ArrayList<>();
-
-        int total = bookService.totalCount();
-        int totalPages = (int) Math.ceil(total / (double) PAGE_SIZE);
-
-        if (pageBooks.isEmpty()) {
-            SendMessage sendMessage = AnswerMethodFactory.getSendMessage(chatId,
-                    "Страница пуста.");
-            try {
-                client.execute(sendMessage);
-            } catch (TelegramApiException e) {
-                throw new RuntimeException(e);
-            }
-            return;
-        }
-
+        Page<Book> pageObj = bookService.findPage(page, PAGE_SIZE);
+        int totalPages = pageObj.getTotalPages();
+        if (totalPages == 0) totalPages = 1;
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("Страница %d из %d%n%n", page, totalPages));
-        for (Book b : pageBooks) {
+        for (Book b : pageObj.getContent()) {
             sb.append(String.format("%d) %s%n", b.getId(), b.getTitle()));
-            textButton.add(b.getTitle());
-            dataButton.add(SHOW_BOOKS_PAGINATION + ":" + b.getId());
-            configuration.add(1);
         }
 
-        textButton.add("⬅️ Prev");
-        textButton.add("Next ➡️");
-        dataButton.add(SHOW_BOOKS_PAGINATION + ":" + (page - 1));
-        dataButton.add(SHOW_BOOKS_PAGINATION + ":" + (page + 1));
-        configuration.add(2);
+        List<InlineKeyboardRow> rows = new ArrayList<>();
+        InlineKeyboardRow row = new InlineKeyboardRow();
 
-        textButton.add("◀️ Назад");
-        dataButton.add(START);
-        configuration.add(1);
+        // Кнопки для каждой книги
+        for (Book b : pageObj.getContent()) {
+            InlineKeyboardButton btn = new InlineKeyboardButton(b.getTitle());
+            btn.setCallbackData(SHOW_BOOKS_PAGINATION + ":" + b.getId());
+            row.add(btn);
+        }
+        rows.add(row);
 
+        // Навигация
+        InlineKeyboardRow nav = new InlineKeyboardRow();
+//        List<InlineKeyboardButton> nav = new ArrayList<>();
+        if (page > 1) {
+            InlineKeyboardButton prev = new InlineKeyboardButton("⬅️ Prev");
+            prev.setCallbackData(SHOW_BOOKS_PAGINATION + ":" + (page - 1));
+            nav.add(prev);
+        }
+        if (page < totalPages) {
+            InlineKeyboardButton next = new InlineKeyboardButton("Next ➡️");
+            next.setCallbackData(SHOW_BOOKS_PAGINATION + ":" + (page + 1));
+            nav.add(next);
+        }
+        if (!nav.isEmpty()) rows.add(nav);
 
-        SendMessage sendMessage = AnswerMethodFactory.getSendMessage(chatId,
+        // Назад в меню
+        InlineKeyboardButton back = new InlineKeyboardButton("◀️ Назад");
+        back.setCallbackData(START);
+        rows.add(new InlineKeyboardRow(back));
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup(rows);
+        markup.setKeyboard(rows);
+
+        EditMessageText editMessageText = AnswerMethodFactory.getEditMessageText(
+                callbackQuery.getMessage().getChatId(),
+                callbackQuery.getMessage().getMessageId(),
                 sb.toString(),
-                KeyboardFactory.getInlineKeyboard(
-                        textButton,
-                        configuration,
-                        dataButton
-                ));
-
+                markup
+        );
         try {
-            client.execute(sendMessage);
+            client.execute(editMessageText);
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private int parseSecondInt(String data, int i) {
+        String[] parts = data.split(":");
+        return Integer.parseInt(parts[1]);
     }
 }
