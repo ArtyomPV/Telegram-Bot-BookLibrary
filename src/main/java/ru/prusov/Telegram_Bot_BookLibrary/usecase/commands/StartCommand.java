@@ -33,9 +33,9 @@ public class StartCommand implements Command {
         SendMessage sendMessage = AnswerMethodFactory.getSendMessage(chatId,
                 "Добро пожаловать! Выберите действие:",
                 KeyboardFactory.getInlineKeyboard(
-                        List.of("Вывести все книги", "Показать книгу", "Другая кнопка"),
-                        List.of(1, 1, 1),
-                        List.of(SHOW_ALL_BOOKS, SHOW_BOOK_MENU, OTHER_ACTION)
+                        List.of("Вывести все книги", "Показать книги ", "Показать книгу", "Другая кнопка"),
+                        List.of(1, 1, 1, 1),
+                        List.of(SHOW_ALL_BOOKS, SHOW_BOOKS_PAGINATION + ":" + 1, SHOW_BOOK_MENU, OTHER_ACTION)
                 ));
         try {
             client.execute(sendMessage);
