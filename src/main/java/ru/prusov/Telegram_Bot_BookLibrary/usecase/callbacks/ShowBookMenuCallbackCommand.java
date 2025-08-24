@@ -1,6 +1,7 @@
 package ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks;
 
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -35,8 +36,8 @@ public class ShowBookMenuCallbackCommand implements CallbackCommand {
         List<String> data = new ArrayList<>();
         List<String> text = new ArrayList<>();
         List<Integer> indexes = new ArrayList<>();
-        Collection<Book> books = bookService.findAll();
-        books.forEach(book -> {
+        Page<Book> allBooks = bookService.findPage(1, Integer.MAX_VALUE);
+        allBooks.getContent().forEach(book -> {
                     text.add(book.getTitle());
                     data.add(SHOW_BOOK + ":" + book.getId());
                     indexes.add(1);

@@ -1,6 +1,7 @@
 package ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks;
 
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -30,16 +31,20 @@ public class ShowAllBookCallbackCommand implements CallbackCommand {
 
     @Override
     public void execute(CallbackQuery callbackQuery) {
+        Page<Book> allBook = bookService.findPage(1, Integer.MAX_VALUE);
+
         StringBuilder sb = new StringBuilder();
-        for (Book book : bookService.findAll()) {
+        for (Book book : allBook.getContent()) {
             sb.append(String.format("%d: %s - %s, %d %n",
                     book.getId(),
                     book.getTitle(),
                     book.getAuthor(),
                     book.getYear()));
         }
+        String text = sb.length()==0?"Книг нет": sb.toString();
+
         SendMessage sendMessage = AnswerMethodFactory.getSendMessage(callbackQuery.getMessage().getChatId(),
-                sb.toString(),
+                text,
                 KeyboardFactory.getInlineKeyboard(
                         List.of("Назад"),
                         List.of(1),
