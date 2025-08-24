@@ -35,6 +35,8 @@ import static ru.prusov.Telegram_Bot_BookLibrary.usecase.callbacks.CallbackData.
 @RequiredArgsConstructor
 public class TelegramBotService implements LongPollingSingleThreadUpdateConsumer, SpringLongPollingBot {
 
+    private final int PAGE_SIZE = 2;
+
     private final String botToken;
     private final BookService bookService;
     private final TelegramClient client;

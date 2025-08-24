@@ -4,10 +4,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 import ru.prusov.Telegram_Bot_BookLibrary.model.Book;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class BookService {
@@ -28,4 +25,27 @@ public class BookService {
     public Optional<Book> findById(Long id) {
         return Optional.ofNullable(books.get(id));
     }
+
+    /**
+     * Создаем вспомогательный список со значениями из мапы
+     * по номеру страницы умноженному на количество позиций в странице получаем позицию от куда будем извлекать значения
+     * определяем конечную точку на странице, к отправной позиции прибавляем кол-во позиций на странице или последний индекс массива
+     * @param page     номер страницы
+     * @param pageSize количество позиций на страницу
+     * @return возвращает список книг в пределах страницы
+     */
+    public List<Book> findPage(int page, int pageSize) {
+        List<Book> list = new ArrayList<>(books.values());
+        int from = (page - 1) * pageSize;
+        if (from >= list.size()) {
+            return Collections.emptyList();
+        }
+        int to = Math.min(from + pageSize, list.size());
+        return list.subList(from, to);
+    }
+
+    public int totalCount() {
+        return books.size();
+    }
 }
+

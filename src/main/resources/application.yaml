@@ -21,3 +21,6 @@ bot:
   botToken: ${BOT_TOKEN}
 server:
   port: 8081
+
+page:
+  size: 2
