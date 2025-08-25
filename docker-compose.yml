@@ -3,7 +3,7 @@ version: '3.9'
 services:
   database:
     container_name: my_library_helper
-    image: 'postgres:latest'
+    image: 'postgres:16'
     environment:
       POSTGRES_DB: library_db
       POSTGRES_USER: arty
